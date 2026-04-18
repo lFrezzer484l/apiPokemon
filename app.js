@@ -1,4 +1,3 @@
-const http = require("http");
 require("dotenv").config();
 
 const express = require("express");
@@ -7,6 +6,15 @@ const swaggerUi = require("swagger-ui-express");
 const { handlePokemonRoutes } = require("./routes/pokemon");
 
 const app = express();
+
+// CORS
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Content-Type", "application/json");
+    next();
+});
+
+// Swagger config
 const swaggerDocument = {
     openapi: "3.0.0",
     info: {
@@ -16,7 +24,7 @@ const swaggerDocument = {
     },
     servers: [
         {
-            url: "http://localhost:4000"
+            url: "https://api-pokemon-n90j.onrender.com"
         }
     ],
     paths: {
@@ -28,25 +36,12 @@ const swaggerDocument = {
                         name: "nombre",
                         in: "path",
                         required: true,
-                        schema: {
-                            type: "string"
-                        }
+                        schema: { type: "string" }
                     }
                 ],
                 responses: {
                     200: {
-                        description: "Pokemon encontrado",
-                        content: {
-                            "application/json": {
-                                example: {
-                                    id: 1,
-                                    nombre: "pikachu",
-                                    peso: 6,
-                                    altura: 0.4,
-                                    tipo: "electrico"
-                                }
-                            }
-                        }
+                        description: "OK"
                     },
                     404: {
                         description: "No encontrado"
@@ -57,27 +52,21 @@ const swaggerDocument = {
     }
 };
 
+// Swagger
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-const server = http.createServer((req, res) => {
+// Endpoint
+app.get("/pokemon/:nombre", (req, res) => {
+    handlePokemonRoutes(req, res);
+});
 
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Content-Type", "application/json");
-
-    if (req.url.startsWith("/pokemon")) {
-        handlePokemonRoutes(req, res);
-    } else {
-        res.writeHead(404);
-        res.end(JSON.stringify({ error: "Ruta no encontrada" }));
-    }
+// 404
+app.use((req, res) => {
+    res.status(404).json({ error: "Ruta no encontrada" });
 });
 
 const PORT = process.env.PORT || 4000;
 
-server.listen(PORT, () => {
-    console.log(`API corriendo en http://localhost:${PORT}`);
-});
-
-app.listen(4001, () => {
-    console.log("Swagger disponible en http://localhost:4001/docs");
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en puerto ${PORT}`);
 });
