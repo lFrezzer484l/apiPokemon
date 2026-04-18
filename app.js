@@ -3,11 +3,11 @@ require("dotenv").config();
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 
-const { handlePokemonRoutes } = require("./routes/pokemon");
+const { findPokemonByName } = require("./model/pokemonModel");
 
 const app = express();
 
-// CORS
+// CORS (sin forzar Content-Type)
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     next();
@@ -40,7 +40,7 @@ const swaggerDocument = {
                 ],
                 responses: {
                     200: {
-                        description: "OK"
+                        description: "Pokemon encontrado"
                     },
                     404: {
                         description: "No encontrado"
@@ -51,12 +51,26 @@ const swaggerDocument = {
     }
 };
 
-// Swagger
+// Swagger UI
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Endpoint
-app.get("/pokemon/:nombre", (req, res) => {
-    handlePokemonRoutes(req, res);
+// Endpoint REAL usando Express (IMPORTANTE)
+app.get("/pokemon/:nombre", async (req, res) => {
+    try {
+        const nombre = req.params.nombre;
+
+        const pokemon = await findPokemonByName(nombre);
+
+        if (!pokemon) {
+            return res.status(404).json({ error: "Pokemon no encontrado" });
+        }
+
+        res.json(pokemon);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error del servidor" });
+    }
 });
 
 // 404
